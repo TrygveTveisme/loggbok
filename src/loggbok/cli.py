@@ -54,6 +54,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {c['group']:<10} {c['rule']:<26} {c['failed']:>4} {c['missing']:>4} {c['checked']:>5}")
         for tk, err in res.errors.items():
             print(f"error {tk}: {err}")
+        if res.errors:
+            print(f"\n{len(res.errors)} stocks could not be fetched. Run `loggbok screen` again later: "
+                  "stocks fetched today are cached, so only these are tried again.")
     elif args.cmd == "update":
         journal = Journal()
         accounts = ["paper"] if args.mode == "paper" else ["ask", "normal"]
