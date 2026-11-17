@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+.pytest_cache/
+# Local data: your trades and cached market data never go to GitHub
+data/
+*.db
