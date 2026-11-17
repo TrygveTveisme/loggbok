@@ -20,6 +20,8 @@ def good(**kw):
                 free_cash_flow=6e8, revenue_growth=0.1, net_debt=1e9, ebitda=1e9, pe=15.0, pb=3.0,
                 dividend_rate=3.0, op_margins=[0.2, 0.18, 0.15], pe_history=[18.0, 20.0, 22.0])
     base.update(kw)
+    if "name" not in kw:
+        base["name"] = f"{base['ticker']} Company"  # distinct companies unless a test says otherwise
     return Fundamentals(**base)
 
 
@@ -121,3 +123,13 @@ def test_shipped_universe_has_sp500():
     from loggbok.config import all_tickers, load_universe
     tickers = all_tickers(load_universe())
     assert len(tickers) > 500 and "BRK-B" in tickers and "EQNR.OL" in tickers
+
+
+def test_one_share_class_per_company():
+    a = evaluate(good(ticker="FOXA", name="Fox Corporation"), rising(step=0.003), RULES)
+    b = evaluate(good(ticker="FOX", name="Fox Corporation"), rising(step=0.002), RULES)
+    c = evaluate(good(ticker="GOOGL", name="Alphabet Inc. Class A"), rising(step=0.001), RULES)
+    d = evaluate(good(ticker="GOOG", name="Alphabet Inc. Class C"), rising(step=0.0005), RULES)
+    out = rank([b, d, a, c])
+    assert [e.ticker for e in out if e.eligible] == ["FOXA", "GOOGL"]
+    assert b.rank is None and d.rank is None and not b.eligible
