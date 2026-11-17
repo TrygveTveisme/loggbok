@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "loggbok"
+version = "0.1.0"
+description = "Personal stock screener, trade list and trade journal for Oslo Børs and US stocks"
+requires-python = ">=3.10"
+dependencies = [
+    "yfinance>=0.2.50",
+    "pandas>=2.0",
+    "pyyaml>=6.0",
+    "streamlit>=1.35",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+loggbok = "loggbok.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

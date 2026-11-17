@@ -1,0 +1,55 @@
+# Screening and trading rules. See "Stock Tracker Strategy" in the Second Brain.
+# Bump `version` whenever a rule changes, so every trade can be tied to the rules that produced it.
+version: v1
+
+universe:
+  min_market_cap:        # in the stock's trading currency
+    NOK: 2_000_000_000
+    USD: 2_000_000_000
+  min_daily_turnover:    # average daily volume x price, trading currency
+    NOK: 5_000_000
+    USD: 20_000_000
+
+quality:                 # non-financial companies, must pass all
+  min_roe: 0.12
+  min_free_cash_flow: 0          # must be above this (positive)
+  min_revenue_growth: 0.05
+  max_net_debt_ebitda: 2.5
+  positive_op_margin_years: 3
+
+price:                   # non-financial companies, must pass all
+  max_pe: 25
+  pe_below_own_median: true      # P/E under the stock's own median over the reported years
+  min_pe_history_points: 3
+  min_fcf_yield: 0.03
+
+financials:              # banks and insurers, instead of quality + price
+  min_roe: 0.11
+  max_pe: 14
+  max_pb: 1.6
+  dividend_stable_years: 3       # dividend per year not falling over this many full years
+
+trend:
+  short_ma: 50
+  long_ma: 200
+  momentum_lookback_days: 126    # about 6 months
+  momentum_skip_days: 21         # leave out the last month
+
+buying:
+  check_every_days: 14
+  max_new_per_check: 2
+  position_size: 0.07            # share of portfolio value per new position
+  max_position: 0.10
+  max_positions: 15
+  max_sector_weight: 0.30
+  min_order_share: 0.5           # skip a buy if cash covers less than this share of a full position
+
+selling:
+  trailing_stop: 0.15            # sell 15 % below the highest close since buying
+  sell_below_long_ma: true
+  sell_on_quality_lost: true
+  trim_above: 0.15
+  trim_to: 0.10
+
+# How a rule with missing data counts: "fail" (safe default) or "skip"
+missing_data: fail
