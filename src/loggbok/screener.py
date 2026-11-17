@@ -37,6 +37,7 @@ class Evaluation:
     results: list[RuleResult] = field(default_factory=list)
     group_passed: dict[str, bool] = field(default_factory=dict)
     rank: int | None = None
+    score: float | None = None  # momentum plus ranking bonuses
     key_figures: dict[str, float | None] = field(default_factory=dict)
 
     @property
@@ -56,11 +57,15 @@ class Evaluation:
 
     @property
     def failed(self) -> list[str]:
-        return [r.name for r in self.results if r.passed is False]
+        return [r.name for r in self.results if r.passed is False and r.group != "ranking"]
 
     @property
     def missing(self) -> list[str]:
-        return [r.name for r in self.results if r.passed is None]
+        return [r.name for r in self.results if r.passed is None and r.group != "ranking"]
+
+    @property
+    def bonuses(self) -> list[str]:
+        return [r.name for r in self.results if r.group == "ranking" and r.passed is True]
 
     def snapshot(self) -> dict:
         """Everything known about the stock at decision time, for the trade journal."""
@@ -124,13 +129,14 @@ def evaluate(f: Fundamentals, close: pd.Series, rules: dict) -> Evaluation:
                             min(margins) if margins else None, 0))
         p = rules["price"]
         R.append(_check("price", "P/E", f.pe if (f.pe or 0) > 0 else None, p["max_pe"], lt))
-        if p.get("pe_below_own_median"):
-            hist = f.pe_history
-            if len(hist) >= p["min_pe_history_points"] and f.pe and f.pe > 0:
-                med = statistics.median(hist)
-                R.append(RuleResult("price", "P/E below own median", f.pe < med, f.pe, round(med, 2)))
-            else:
-                R.append(RuleResult("price", "P/E below own median", None, f.pe, "too little history"))
+        # Hard rule in v1; in v2 a ranking bonus (group "ranking" never blocks a stock)
+        grp = "price" if p.get("pe_below_own_median") else "ranking"
+        hist = f.pe_history
+        if len(hist) >= p["min_pe_history_points"] and f.pe and f.pe > 0:
+            med = statistics.median(hist)
+            R.append(RuleResult(grp, "P/E below own median", f.pe < med, f.pe, round(med, 2)))
+        else:
+            R.append(RuleResult(grp, "P/E below own median", None, f.pe, "too little history"))
         R.append(_check("price", "FCF yield", f.fcf_yield, p["min_fcf_yield"], gt))
 
     short, long_ = sma(close, t["short_ma"]), sma(close, t["long_ma"])
@@ -145,6 +151,12 @@ def evaluate(f: Fundamentals, close: pd.Series, rules: dict) -> Evaluation:
         if not rs:
             continue
         ev.group_passed[g] = all(r.passed is True for r in rs) if strict else all(r.passed is not False for r in rs)
+
+    bonus = 0.0
+    rk = rules.get("ranking", {})
+    if any(r.name == "P/E below own median" and r.group == "ranking" and r.passed for r in R):
+        bonus += rk.get("below_own_median_pe_bonus", 0.0)
+    ev.score = None if ev.momentum is None else ev.momentum + bonus
 
     ev.key_figures = {
         "market_cap": f.market_cap, "roe": f.roe, "fcf_yield": f.fcf_yield,
@@ -176,9 +188,9 @@ def _dividend_stable(f: Fundamentals, years: int) -> RuleResult:
 
 
 def rank(evals: list[Evaluation]) -> list[Evaluation]:
-    """Rank eligible stocks by momentum, best first. Returns all, eligible ones first."""
+    """Rank eligible stocks by score (momentum plus bonuses), best first. Returns all, eligible ones first."""
     eligible = sorted([e for e in evals if e.eligible],
-                      key=lambda e: e.momentum if e.momentum is not None else float("-inf"), reverse=True)
+                      key=lambda e: e.score if e.score is not None else float("-inf"), reverse=True)
     for i, e in enumerate(eligible, 1):
         e.rank = i
     rest = [e for e in evals if not e.eligible]
@@ -192,6 +204,8 @@ def rule_summary(evals: list[Evaluation]) -> list[dict]:
     counts: dict[tuple[str, str], dict] = {}
     for e in evals:
         for r in e.results:
+            if r.group == "ranking":
+                continue
             c = counts.setdefault((r.group, r.name), {"group": r.group, "rule": r.name, "checked": 0, "failed": 0, "missing": 0})
             c["checked"] += 1
             if r.passed is False:

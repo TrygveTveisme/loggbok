@@ -1,6 +1,8 @@
 # Screening and trading rules. See "Stock Tracker Strategy" in the Second Brain.
 # Bump `version` whenever a rule changes, so every trade can be tied to the rules that produced it.
-version: v1
+version: v2
+# v2 (2026-11-17): bigger universe (S&P 500 + Oslo over 2 bn kr); "P/E below own median" moved
+#   from a hard rule to a ranking bonus, because it overlapped with the other two price rules.
 
 universe:
   min_market_cap:        # in the stock's trading currency
@@ -19,7 +21,7 @@ quality:                 # non-financial companies, must pass all
 
 price:                   # non-financial companies, must pass all
   max_pe: 25
-  pe_below_own_median: true      # P/E under the stock's own median over the reported years
+  pe_below_own_median: false     # v1: true. Now a ranking bonus, see `ranking`
   min_pe_history_points: 3
   min_fcf_yield: 0.03
 
@@ -34,6 +36,9 @@ trend:
   long_ma: 200
   momentum_lookback_days: 126    # about 6 months
   momentum_skip_days: 21         # leave out the last month
+
+ranking:                 # stocks that pass are ranked by momentum plus bonuses
+  below_own_median_pe_bonus: 0.05   # +5 percentage points if P/E is under the stock's own median
 
 buying:
   check_every_days: 14

@@ -1,6 +1,7 @@
 """Glue: fetch data for the universe, evaluate every stock, rank, and keep the journal up to date."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Callable
 
@@ -25,20 +26,33 @@ class ScreenResult:
 
 
 def run_screen(source: DataSource, tickers: list[str], rules: dict,
-               progress: Callable[[int, int, str], None] | None = None) -> ScreenResult:
+               progress: Callable[[int, int, str], None] | None = None, workers: int = 4) -> ScreenResult:
+    """Fetch and evaluate every ticker. Fundamentals are fetched `workers` at a time;
+    progress is always reported from the calling thread."""
     tickers = list(dict.fromkeys(tickers))
     closes = source.prices(tickers, period="2y")
     evals, errors, fx = [], {}, {"NOK": 1.0}
-    for i, tk in enumerate(tickers):
-        if progress:
-            progress(i, len(tickers), tk)
+    funds: dict[str, Fundamentals] = {}
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        futures = {pool.submit(source.fundamentals, tk): tk for tk in tickers}
+        for i, fut in enumerate(as_completed(futures)):
+            tk = futures[fut]
+            if progress:
+                progress(i, len(tickers), tk)
+            try:
+                funds[tk] = fut.result()
+            except Exception as e:  # one bad ticker should not stop the screen
+                errors[tk] = f"{type(e).__name__}: {e}"
+    for tk in tickers:
+        f = funds.get(tk)
+        if f is None:
+            continue
         try:
-            f: Fundamentals = source.fundamentals(tk)
             if f.currency and f.currency not in fx:
                 fx[f.currency] = source.fx_to_nok(f.currency)
             series = closes[tk] if tk in closes else pd.Series(dtype=float)
             evals.append(evaluate(f, series, rules))
-        except Exception as e:  # one bad ticker should not stop the screen
+        except Exception as e:
             errors[tk] = f"{type(e).__name__}: {e}"
     return ScreenResult(rank(evals), closes, fx, errors)
 
