@@ -35,6 +35,11 @@ def main(argv: list[str] | None = None) -> int:
             if e.eligible:
                 print(f"{e.rank:>3}  {e.ticker:<10} {e.name[:28]:<28} {e.sector[:22]:<22} momentum {e.momentum:+.1%}")
         print(f"\n{sum(e.eligible for e in res.evaluations)} of {len(res.evaluations)} stocks pass all rules.")
+        from .screener import rule_summary
+        print("\nWhat knocks stocks out (failed / missing data / checked):")
+        for c in rule_summary(res.evaluations):
+            if c["failed"] or c["missing"]:
+                print(f"  {c['group']:<10} {c['rule']:<26} {c['failed']:>4} {c['missing']:>4} {c['checked']:>5}")
         for tk, err in res.errors.items():
             print(f"error {tk}: {err}")
     elif args.cmd == "update":
