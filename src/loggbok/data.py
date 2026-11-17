@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import time
 from dataclasses import asdict, dataclass, field
 from datetime import date
 from pathlib import Path
@@ -104,9 +105,12 @@ def _num(x) -> float | None:
 
 
 class YFinanceSource:
-    def __init__(self, cache_dir: Path | None = None, use_cache: bool = True):
+    RETRY_WAITS = (10, 30, 90)  # seconds to wait after a "Too Many Requests" answer
+
+    def __init__(self, cache_dir: Path | None = None, use_cache: bool = True, sleep=time.sleep):
         self.cache_dir = (cache_dir or DATA_DIR / "cache") / date.today().isoformat()
         self.use_cache = use_cache
+        self._sleep = sleep
         self._fx: dict[tuple[str, str], float] = {}
 
     # ---- cache helpers
@@ -152,10 +156,20 @@ class YFinanceSource:
         key = self._cache_path(f"fund_{ticker}.json")
         if self.use_cache and key.exists():
             return Fundamentals.from_dict(json.loads(key.read_text(encoding="utf-8")))
-        f = self._fetch_fundamentals(ticker)
+        f = self._with_retry(lambda: self._fetch_fundamentals(ticker))
         if self.use_cache:
             key.write_text(json.dumps(f.to_dict()), encoding="utf-8")
         return f
+
+    def _with_retry(self, fn):
+        """Yahoo answers "Too Many Requests" when asked too fast. Wait and try again a few times."""
+        for wait in (*self.RETRY_WAITS, None):
+            try:
+                return fn()
+            except Exception as e:
+                if wait is None or "RateLimit" not in type(e).__name__ and "Too Many Requests" not in str(e):
+                    raise
+                self._sleep(wait)
 
     def _fetch_fundamentals(self, ticker: str) -> Fundamentals:
         import yfinance as yf

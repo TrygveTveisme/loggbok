@@ -26,8 +26,8 @@ class ScreenResult:
 
 
 def run_screen(source: DataSource, tickers: list[str], rules: dict,
-               progress: Callable[[int, int, str], None] | None = None, workers: int = 4) -> ScreenResult:
-    """Fetch and evaluate every ticker. Fundamentals are fetched `workers` at a time;
+               progress: Callable[[int, int, str], None] | None = None, workers: int = 3) -> ScreenResult:
+    """Fetch and evaluate every ticker. Fundamentals are fetched `workers` at a time (more makes Yahoo throttle);
     progress is always reported from the calling thread."""
     tickers = list(dict.fromkeys(tickers))
     closes = source.prices(tickers, period="2y")
