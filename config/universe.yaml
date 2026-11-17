@@ -1,0 +1,100 @@
+# Stocks the screener looks at. The universe rules in rules.yaml filter this list further.
+# Yahoo Finance tickers: Oslo Børs ends in .OL. Add or remove freely.
+oslo:
+  - EQNR.OL   # Equinor
+  - DNB.OL    # DNB Bank
+  - MOWI.OL   # Mowi
+  - KOG.OL    # Kongsberg Gruppen
+  - TEL.OL    # Telenor
+  - NHY.OL    # Norsk Hydro
+  - ORK.OL    # Orkla
+  - YAR.OL    # Yara
+  - AKRBP.OL  # Aker BP
+  - SALM.OL   # SalMar
+  - GJF.OL    # Gjensidige
+  - STB.OL    # Storebrand
+  - SUBC.OL   # Subsea7
+  - TOM.OL    # Tomra
+  - NOD.OL    # Nordic Semiconductor
+  - AKER.OL   # Aker
+  - FRO.OL    # Frontline
+  - VAR.OL    # Vår Energi
+  - BAKKA.OL  # Bakkafrost
+  - LSG.OL    # Lerøy Seafood
+  - KIT.OL    # Kitron
+  - VEI.OL    # Veidekke
+  - TGS.OL    # TGS
+  - BWLPG.OL  # BW LPG
+  - HAFNI.OL  # Hafnia
+  - MPCC.OL   # MPC Container Ships
+  - WAWI.OL   # Wallenius Wilhelmsen
+  - AUTO.OL   # AutoStore
+  - ATEA.OL   # Atea
+  - BOUV.OL   # Bouvet
+  - EPR.OL    # Europris
+  - ENTRA.OL  # Entra
+  - NONG.OL   # SpareBank 1 Nord-Norge
+  - MING.OL   # SpareBank 1 SMN
+  - MORG.OL   # Sparebanken Møre
+  - PROT.OL   # Protector Forsikring
+  - AFG.OL    # AF Gruppen
+  - ODL.OL    # Odfjell Drilling
+  - DOFG.OL   # DOF Group
+  - ELK.OL    # Elkem
+us:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - AMZN
+  - META
+  - NVDA
+  - AVGO
+  - ORCL
+  - ADBE
+  - CRM
+  - ACN
+  - TXN
+  - QCOM
+  - INTU
+  - JNJ
+  - UNH
+  - LLY
+  - ABBV
+  - MRK
+  - PFE
+  - TMO
+  - ABT
+  - DHR
+  - COST
+  - WMT
+  - PG
+  - KO
+  - PEP
+  - MCD
+  - NKE
+  - HD
+  - LOW
+  - TJX
+  - SBUX
+  - V
+  - MA
+  - JPM
+  - BAC
+  - WFC
+  - GS
+  - MS
+  - BLK
+  - SPGI
+  - CB
+  - PGR
+  - CAT
+  - DE
+  - HON
+  - UNP
+  - LMT
+  - RTX
+  - GE
+  - XOM
+  - CVX
+  - LIN
+  - NEE
