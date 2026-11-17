@@ -1,4 +1,5 @@
 import pandas as pd
+import pytest
 
 from loggbok.config import load_rules
 from loggbok.data import Fundamentals
@@ -30,7 +31,7 @@ def test_quality_stock_in_uptrend_is_eligible():
 def test_each_quality_rule_can_fail():
     for kw, rule in [({"roe": 0.05}, "ROE"), ({"free_cash_flow": -1.0}, "free cash flow"),
                      ({"revenue_growth": 0.01}, "revenue growth"), ({"net_debt": 5e9}, "net debt / EBITDA"),
-                     ({"pe": 30.0}, "P/E"), ({"pe": 21.0}, "P/E below own median"),
+                     ({"pe": 30.0}, "P/E"),
                      ({"free_cash_flow": 1e8}, "FCF yield"), ({"op_margins": [0.1, -0.02, 0.1]}, "positive op. margin 3y")]:
         ev = evaluate(good(**kw), rising(), RULES)
         assert not ev.eligible and rule in ev.failed, (kw, ev.failed)
@@ -90,3 +91,33 @@ def test_rule_summary_counts_fails_and_missing():
     roe = next(c for c in rule_summary(evs) if c["rule"] == "ROE")
     assert (roe["failed"], roe["missing"], roe["checked"]) == (1, 1, 3)
     assert rule_summary(evs)[0]["rule"] == "ROE"
+
+
+def test_pe_median_is_a_ranking_bonus_in_v2():
+    above = evaluate(good(ticker="ABOVE.OL", pe=21.0), rising(step=0.003), RULES)  # median of history is 20
+    below = evaluate(good(ticker="BELOW.OL", pe=15.0), rising(step=0.003), RULES)
+    assert above.eligible and below.eligible
+    assert below.bonuses == ["P/E below own median"] and above.bonuses == []
+    assert below.score - above.score == pytest.approx(RULES["ranking"]["below_own_median_pe_bonus"])
+    assert [e.ticker for e in rank([above, below])] == ["BELOW.OL", "ABOVE.OL"]
+
+
+def test_pe_median_can_still_be_a_hard_rule():
+    strict = {**RULES, "price": {**RULES["price"], "pe_below_own_median": True}}
+    ev = evaluate(good(pe=21.0), rising(), strict)
+    assert not ev.eligible and "P/E below own median" in ev.failed
+
+
+def test_universe_includes_ticker_files(tmp_path):
+    from loggbok.config import all_tickers, load_universe
+    (tmp_path / "universe.yaml").write_text("include:\n  - extra.txt\n  - missing.txt\noslo:\n  - EQNR.OL\n")
+    (tmp_path / "extra.txt").write_text("# comment\nAAPL\nbrk-b  # class B\nEQNR.OL\n")
+    u = load_universe(tmp_path / "universe.yaml")
+    assert u["extra.txt"] == ["AAPL", "BRK-B", "EQNR.OL"] and u["missing.txt"] == []
+    assert all_tickers(u) == ["EQNR.OL", "AAPL", "BRK-B"]
+
+
+def test_shipped_universe_has_sp500():
+    from loggbok.config import all_tickers, load_universe
+    tickers = all_tickers(load_universe())
+    assert len(tickers) > 500 and "BRK-B" in tickers and "EQNR.OL" in tickers

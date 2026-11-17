@@ -147,7 +147,7 @@ def build_trade_list(*, evaluations: dict[str, Evaluation], closes: pd.DataFrame
             skipped.append(Skip(ev.ticker, "price too high for position size", ev.rank, snap))
             continue
         o = Order(action="buy", ticker=ev.ticker, account=account_for(ev.ticker, mode), quantity=qty, price=price,
-                  currency=ev.currency, fx_rate=fx, reason=f"rank {ev.rank}, momentum {ev.momentum:+.0%}" if ev.momentum is not None else f"rank {ev.rank}",
+                  currency=ev.currency, fx_rate=fx, reason=f"rank {ev.rank}, momentum {ev.momentum:+.0%}" + (f" + bonus: {', '.join(ev.bonuses)}" if ev.bonuses else "") if ev.momentum is not None else f"rank {ev.rank}",
                   rank=ev.rank, sector=sector, snapshot=snap)
         orders.append(o)
         cash -= o.value_nok

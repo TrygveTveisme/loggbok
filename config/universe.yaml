@@ -1,5 +1,13 @@
 # Stocks the screener looks at. The universe rules in rules.yaml filter this list further.
 # Yahoo Finance tickers: Oslo Børs ends in .OL. Add or remove freely.
+#
+# `include` adds ticker files from this folder (one ticker per line):
+#   sp500.txt  all S&P 500 members
+#   oslo.txt   Oslo Børs stocks over 1 bn kr, made by `loggbok universe` (needs Yahoo, so it runs on your PC)
+# The lists below are always included too, so the screener still works if a file is missing.
+include:
+  - sp500.txt
+  - oslo.txt
 oslo:
   - EQNR.OL   # Equinor
   - DNB.OL    # DNB Bank

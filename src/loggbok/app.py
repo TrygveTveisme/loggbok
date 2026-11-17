@@ -7,7 +7,7 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from loggbok.config import load_rules, load_universe
+from loggbok.config import all_tickers, load_rules, load_universe
 from loggbok.journal import Journal
 from loggbok.metrics import breakdown, max_drawdown, trade_stats
 from loggbok.pipeline import daily_update, position_values, run_screen
@@ -57,7 +57,8 @@ with st.sidebar:
     if st.button("Refresh market data"):
         screen.clear()
     universe = load_universe() if not FAKE else {"all": get_source().tickers}
-    tickers = tuple(t for ts in universe.values() for t in ts) + tuple(journal.watchlist())
+    tickers = tuple(dict.fromkeys(all_tickers(universe) + journal.watchlist()))
+    st.caption(f"{len(tickers)} stocks in the universe")
 
 res = screen(tickers, version)
 evals = res.by_ticker()
@@ -82,7 +83,8 @@ with tab_screen:
         k = e.key_figures
         rows.append({
             "rank": e.rank, "ticker": e.ticker, "name": e.name, "market": e.market, "sector": e.sector,
-            "bank/insurer": e.is_financial, "momentum %": pct(e.momentum), "P/E": k["pe"], "ROE %": pct(k["roe"]),
+            "bank/insurer": e.is_financial, "momentum %": pct(e.momentum), "score %": pct(e.score),
+            "bonus": ", ".join(e.bonuses), "P/E": k["pe"], "ROE %": pct(k["roe"]),
             "FCF yield %": pct(k["fcf_yield"]), "growth %": pct(k["revenue_growth"]),
             "net debt/EBITDA": k["net_debt_ebitda"], "div. yield %": pct(k["dividend_yield"]),
             "failed": ", ".join(e.failed), "missing data": ", ".join(e.missing),
