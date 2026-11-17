@@ -1,6 +1,7 @@
 """Apply the rules in config/rules.yaml to one stock and rank the stocks that pass."""
 from __future__ import annotations
 
+import re
 import statistics
 from dataclasses import asdict, dataclass, field
 
@@ -38,6 +39,7 @@ class Evaluation:
     group_passed: dict[str, bool] = field(default_factory=dict)
     rank: int | None = None
     score: float | None = None  # momentum plus ranking bonuses
+    duplicate_of_company: bool = False  # another share class of the same company ranks higher
     key_figures: dict[str, float | None] = field(default_factory=dict)
 
     @property
@@ -49,7 +51,7 @@ class Evaluation:
 
     @property
     def eligible(self) -> bool:
-        return (
+        return not self.duplicate_of_company and (
             self.group_passed.get("universe", False)
             and self.passes_quality
             and self.group_passed.get("trend", False)
@@ -187,13 +189,29 @@ def _dividend_stable(f: Fundamentals, years: int) -> RuleResult:
     return RuleResult("financials", name, ok, vals[-1], "not falling")
 
 
+_CLASS_WORDS = re.compile(r"\b(class [a-c]|cl [a-c]|series [a-c]|ser [a-c])\b", re.I)
+
+
+def _company_key(name: str) -> str:
+    return " ".join(_CLASS_WORDS.sub("", name or "").lower().replace(",", " ").replace(".", " ").split())
+
+
 def rank(evals: list[Evaluation]) -> list[Evaluation]:
     """Rank eligible stocks by score (momentum plus bonuses), best first. Returns all, eligible ones first."""
-    eligible = sorted([e for e in evals if e.eligible],
-                      key=lambda e: e.score if e.score is not None else float("-inf"), reverse=True)
+    ordered = sorted([e for e in evals if e.eligible],
+                     key=lambda e: e.score if e.score is not None else float("-inf"), reverse=True)
+    # One share class per company (FOX/FOXA, GOOG/GOOGL): keep the best-scoring one
+    eligible, seen = [], set()
+    for e in ordered:
+        key = _company_key(e.name)
+        if key in seen:
+            e.duplicate_of_company = True
+            continue
+        seen.add(key)
+        eligible.append(e)
     for i, e in enumerate(eligible, 1):
         e.rank = i
-    rest = [e for e in evals if not e.eligible]
+    rest = [e for e in evals if e not in eligible]
     for e in rest:
         e.rank = None
     return eligible + rest
