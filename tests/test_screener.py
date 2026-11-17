@@ -82,3 +82,11 @@ def test_fake_source_runs_through_pipeline():
     src = FakeSource()
     res = run_screen(src, src.tickers, RULES)
     assert len(res.evaluations) == len(src.tickers) and not res.errors
+
+
+def test_rule_summary_counts_fails_and_missing():
+    from loggbok.screener import rule_summary
+    evs = [evaluate(good(roe=0.01), rising(), RULES), evaluate(good(roe=None), rising(), RULES), evaluate(good(), rising(), RULES)]
+    roe = next(c for c in rule_summary(evs) if c["rule"] == "ROE")
+    assert (roe["failed"], roe["missing"], roe["checked"]) == (1, 1, 3)
+    assert rule_summary(evs)[0]["rule"] == "ROE"

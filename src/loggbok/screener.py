@@ -185,3 +185,17 @@ def rank(evals: list[Evaluation]) -> list[Evaluation]:
     for e in rest:
         e.rank = None
     return eligible + rest
+
+
+def rule_summary(evals: list[Evaluation]) -> list[dict]:
+    """How many stocks each rule knocks out, split into a real fail and missing data. Most first."""
+    counts: dict[tuple[str, str], dict] = {}
+    for e in evals:
+        for r in e.results:
+            c = counts.setdefault((r.group, r.name), {"group": r.group, "rule": r.name, "checked": 0, "failed": 0, "missing": 0})
+            c["checked"] += 1
+            if r.passed is False:
+                c["failed"] += 1
+            elif r.passed is None:
+                c["missing"] += 1
+    return sorted(counts.values(), key=lambda c: c["failed"] + c["missing"], reverse=True)

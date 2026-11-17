@@ -88,6 +88,10 @@ with tab_screen:
             "failed": ", ".join(e.failed), "missing data": ", ".join(e.missing),
         })
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+    with st.expander("What knocks stocks out"):
+        from loggbok.screener import rule_summary
+        st.caption("Per rule: stocks that failed it, and stocks where data was missing (counts as a fail).")
+        st.dataframe(pd.DataFrame(rule_summary(res.evaluations)), hide_index=True, width="stretch")
     if res.errors:
         with st.expander(f"{len(res.errors)} tickers could not be fetched"):
             st.write(res.errors)
