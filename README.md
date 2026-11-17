@@ -27,6 +27,7 @@ pip install -e ".[dev]"
 loggbok app       # open the dashboard in the browser
 loggbok universe  # refresh the S&P 500 and Oslo Børs ticker lists (run now and then)
 loggbok screen    # print the ranked candidates and what knocks stocks out
+loggbok backtest  # test stop-loss variants on 5 years of prices (add --quality-only for today's quality list)
 loggbok update    # save today's portfolio snapshot (can run daily from Task Scheduler)
 pytest            # run the tests
 ```
@@ -43,6 +44,7 @@ Your trades are stored in `data/loggbok.db`. The `data/` folder is in `.gitignor
 | `src/loggbok/screener.py` | Applies the rules to one stock; ranks the stocks that pass |
 | `src/loggbok/tradelist.py` | Builds the sells, trims and buys for a check |
 | `src/loggbok/journal.py` | SQLite trade journal: transactions, trades, decision snapshots, skipped signals, daily snapshots |
+| `src/loggbok/backtest.py` | Simulates the trend, buying and selling rules on past prices (quality rules can't be backtested: Yahoo only has today's key figures) |
 | `src/loggbok/metrics.py` | Learning-loop numbers: win rate, expectancy, breakdowns, drawdown |
 | `src/loggbok/app.py` | Streamlit dashboard |
 

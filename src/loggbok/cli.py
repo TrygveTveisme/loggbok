@@ -17,6 +17,10 @@ def main(argv: list[str] | None = None) -> int:
     up.add_argument("--mode", choices=["paper", "real"], default="paper")
     sub.add_parser("app", help="open the dashboard")
     sub.add_parser("universe", help="refresh the S&P 500 and Oslo Børs ticker lists in config/")
+    bt = sub.add_parser("backtest", help="test the trend, buying and selling rules on past prices")
+    bt.add_argument("--years", type=int, default=5, help="years of history to test (default 5)")
+    bt.add_argument("--quality-only", action="store_true",
+                    help="only stocks that pass today's quality rules (flattering: use to compare variants)")
     args = p.parse_args(argv)
 
     if args.cmd == "app":
@@ -32,6 +36,10 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{name}: not refreshed ({type(e).__name__}: {e})")
         print(f"Universe now has {len(all_tickers(load_universe()))} tickers.")
         return 0
+
+    if args.cmd == "backtest":
+        from .backtest_cli import run
+        return run(years=args.years, quality_only=args.quality_only)
 
     from .data import YFinanceSource
     from .journal import Journal

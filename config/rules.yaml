@@ -56,5 +56,9 @@ selling:
   trim_above: 0.15
   trim_to: 0.10
 
+fees:                    # used by the backtest; roughly Nordnet's Normal plan
+  pct: 0.00049
+  min_nok: 79
+
 # How a rule with missing data counts: "fail" (safe default) or "skip"
 missing_data: fail
